@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SA-Trainer — тренажёр интервью для аналитиков</title>
+<meta name="description" content="Практикуйте сбор требований с AI-стейкхолдерами прямо в Telegram. Реалистичные кейсы, автоматическая оценка.">
+<meta property="og:title" content="SA-Trainer — тренажёр интервью для аналитиков">
+<meta property="og:description" content="Бот в Telegram, где вы проводите интервью с виртуальными CEO, архитекторами и бухгалтерами. Бесплатно.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%232490d3'/><text x='50' y='62' text-anchor='middle' font-size='50' font-weight='bold' fill='white' font-family='sans-serif'>SA</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;500;700;800;900&family=Nunito+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+
+:root{
+  --canvas:#f7f4ef;
+  --canvas-warm:#f0ebe3;
+  --white:#ffffff;
+  --ink:#1a1a2e;
+  --ink-soft:#3d3d56;
+  --ink-muted:#7a7a8e;
+  --ink-faint:#b0b0be;
+  --accent:#2490d3;
+  --accent-bright:#29a8ee;
+  --accent-soft:rgba(36,144,211,.08);
+  --accent-mid:rgba(36,144,211,.15);
+  --coral:#e8725a;
+  --coral-soft:rgba(232,114,90,.08);
+  --sage:#5b9e6f;
+  --sage-soft:rgba(91,158,111,.08);
+  --amber:#d4973b;
+  --amber-soft:rgba(212,151,59,.08);
+  --violet:#7c6bc4;
+  --violet-soft:rgba(124,107,196,.08);
+  --border:rgba(26,26,46,.08);
+  --border-strong:rgba(26,26,46,.14);
+  --shadow-sm:0 1px 3px rgba(26,26,46,.06);
+  --shadow-md:0 4px 20px rgba(26,26,46,.08);
+  --shadow-lg:0 12px 48px rgba(26,26,46,.1);
+  --shadow-xl:0 24px 64px rgba(26,26,46,.12);
+  --font-h:'Unbounded',sans-serif;
+  --font-b:'Nunito Sans',sans-serif;
+  --max-w:1080px;
+  --gap:clamp(64px,10vw,112px);
+  --r:14px;
+}
+
+html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+body{
+  font-family:var(--font-b);background:var(--canvas);color:var(--ink);
+  font-size:16px;line-height:1.65;overflow-x:hidden;
+  /* subtle dot grid */
+  background-image:radial-gradient(circle,rgba(26,26,46,.04) 1px,transparent 1px);
+  background-size:24px 24px;
+}
+::selection{background:var(--accent-mid);color:var(--ink)}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+
+.w{max-width:var(--max-w);margin:0 auto;padding:0 28px}
+
+h1,h2,h3{font-family:var(--font-h);letter-spacing:-.04em;line-height:1.1;color:var(--ink)}
+h2{font-size:clamp(1.6rem,3.8vw,2.4rem);font-weight:800}
+h3{font-size:clamp(.92rem,1.6vw,1.05rem);font-weight:700}
+
+.tag-label{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.16em;
+  color:var(--accent);margin-bottom:12px;
+}
+.tag-label::before{
+  content:'';width:8px;height:8px;border-radius:50%;
+  background:var(--accent);opacity:.35;
+}
+.sub{color:var(--ink-muted);font-size:clamp(.9rem,1.4vw,1.02rem);max-width:500px;line-height:1.7;margin-top:10px}
+
+/* ── reveal ── */
+@keyframes up{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:none}}
+.rv{opacity:0;transform:translateY(28px);transition:opacity .7s cubic-bezier(.2,1,.3,1),transform .7s cubic-bezier(.2,1,.3,1)}
+.rv.v{opacity:1;transform:none}
+.d1{transition-delay:.08s}.d2{transition-delay:.16s}.d3{transition-delay:.24s}.d4{transition-delay:.32s}.d5{transition-delay:.4s}
+
+/* ═══ 1. NAV ═══ */
+.nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  background:rgba(247,244,239,.82);
+  backdrop-filter:blur(16px) saturate(1.4);-webkit-backdrop-filter:blur(16px) saturate(1.4);
+  border-bottom:1px solid var(--border);
+}
+.nav .w{display:flex;align-items:center;justify-content:space-between;height:60px}
+.nav-logo{font-family:var(--font-h);font-weight:800;font-size:1rem;letter-spacing:-.03em}
+.nav-logo span{color:var(--accent)}
+.nav-cta{
+  display:inline-flex;align-items:center;gap:7px;
+  background:var(--accent);color:#fff;
+  padding:9px 20px;border-radius:10px;font-size:.82rem;font-weight:700;
+  transition:all .2s;
+  box-shadow:0 2px 12px rgba(36,144,211,.25);
+}
+.nav-cta:hover{background:var(--accent-bright);transform:translateY(-1px);box-shadow:0 4px 20px rgba(36,144,211,.3)}
+.nav-cta svg{width:15px;height:15px;fill:#fff}
+
+/* ═══ 2. HERO ═══ */
+.hero{padding:140px 0 0;position:relative}
+.hero .w{display:grid;grid-template-columns:1.15fr .85fr;gap:48px;align-items:center}
+.hero-text{padding-bottom:var(--gap)}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:6px 16px;border-radius:100px;
+  background:var(--coral-soft);border:1px solid rgba(232,114,90,.18);
+  font-size:.75rem;font-weight:700;color:var(--coral);
+  margin-bottom:28px;
+}
+.hero-badge .dot{width:6px;height:6px;border-radius:50%;background:var(--coral)}
+
+.hero h1{
+  font-size:clamp(2rem,5.5vw,3.4rem);font-weight:900;
+  letter-spacing:-.05em;line-height:1.06;margin-bottom:24px;
+}
+.hero h1 em{
+  font-style:normal;
+  color:var(--accent);
+  text-decoration:underline;
+  text-decoration-color:rgba(36,144,211,.3);
+  text-underline-offset:6px;
+  text-decoration-thickness:3px;
+}
+.hero-p{
+  color:var(--ink-soft);font-size:clamp(.95rem,1.5vw,1.1rem);
+  max-width:480px;line-height:1.7;margin-bottom:36px;
+}
+.hero-actions{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+
+.btn{
+  display:inline-flex;align-items:center;gap:9px;
+  padding:14px 30px;border-radius:12px;
+  font-size:.9rem;font-weight:700;letter-spacing:-.01em;
+  transition:all .25s cubic-bezier(.2,1,.3,1);
+}
+.btn svg{width:17px;height:17px;fill:currentColor;flex-shrink:0}
+.btn-main{
+  background:var(--accent);color:#fff;
+  box-shadow:0 4px 20px rgba(36,144,211,.3),inset 0 1px 0 rgba(255,255,255,.2);
+}
+.btn-main:hover{background:var(--accent-bright);transform:translateY(-2px);box-shadow:0 8px 28px rgba(36,144,211,.35)}
+.btn-soft{
+  background:var(--white);color:var(--ink-soft);
+  border:1px solid var(--border-strong);
+  box-shadow:var(--shadow-sm);
+}
+.btn-soft:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-2px);box-shadow:var(--shadow-md)}
+
+.hero-note{font-size:.78rem;color:var(--ink-faint)}
+
+/* hero visual — the floating chat card */
+.hero-visual{position:relative;padding-bottom:var(--gap)}
+.hero-card{
+  background:var(--white);border-radius:20px;
+  box-shadow:var(--shadow-xl);
+  overflow:hidden;
+  transform:rotate(1.5deg);
+  transition:transform .5s cubic-bezier(.2,1,.3,1);
+  border:1px solid var(--border);
+}
+.hero-card:hover{transform:rotate(0)}
+.hc-head{
+  display:flex;align-items:center;gap:11px;
+  padding:14px 20px;background:var(--canvas-warm);
+  border-bottom:1px solid var(--border);
+}
+.hc-ava{
+  width:38px;height:38px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),var(--accent-bright));
+  display:flex;align-items:center;justify-content:center;
+  font-size:.65rem;font-weight:700;color:#fff;letter-spacing:.02em;
+  font-family:var(--font-h);position:relative;
+}
+.hc-ava::after{content:'';position:absolute;bottom:0;right:0;width:10px;height:10px;border-radius:50%;background:var(--sage);border:2px solid var(--canvas-warm)}
+.hc-name{font-weight:700;font-size:.85rem}
+.hc-role{font-size:.7rem;color:var(--ink-muted)}
+.hc-body{padding:18px 20px;display:flex;flex-direction:column;gap:12px}
+.m{max-width:82%;padding:10px 14px;font-size:.82rem;line-height:1.55}
+.m-u{align-self:flex-end;background:var(--accent);color:#fff;border-radius:14px 14px 4px 14px}
+.m-b{align-self:flex-start;background:var(--canvas);color:var(--ink);border-radius:14px 14px 14px 4px}
+.m-t{font-size:.6rem;color:var(--ink-faint);margin-top:4px;display:block}
+.m-u .m-t{text-align:right;color:rgba(255,255,255,.6)}
+
+/* floating decorative shapes around hero card */
+.hero-visual::before{
+  content:'';position:absolute;top:8%;right:-6%;
+  width:48px;height:48px;border-radius:12px;
+  border:2px solid var(--accent);opacity:.1;
+  transform:rotate(12deg);
+  animation:float 6s ease-in-out infinite;
+}
+.hero-visual::after{
+  content:'';position:absolute;bottom:20%;left:-4%;
+  width:36px;height:36px;border-radius:50%;
+  border:2px solid var(--coral);opacity:.1;
+  transform:rotate(-8deg);
+  animation:float 7s 1s ease-in-out infinite;
+}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+
+/* SVG icon containers */
+.ico-box{
+  width:36px;height:36px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  margin-bottom:14px;flex-shrink:0;
+}
+.ico-box svg{width:18px;height:18px;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none}
+
+/* ═══ 3. STATS ═══ */
+.stats{
+  padding:40px 0;
+  background:var(--white);
+  border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+}
+.stats .w{display:grid;grid-template-columns:repeat(4,1fr)}
+.st{text-align:center;padding:10px 8px;position:relative}
+.st::after{content:'';position:absolute;right:0;top:15%;height:70%;width:1px;background:var(--border)}
+.st:last-child::after{display:none}
+.st-n{font-family:var(--font-h);font-weight:900;font-size:clamp(1.7rem,3.2vw,2.4rem);color:var(--accent);letter-spacing:-.04em;line-height:1;margin-bottom:4px}
+.st-l{font-size:.76rem;color:var(--ink-muted);font-weight:500}
+
+/* ═══ 4. PROBLEM / SOLUTION ═══ */
+.problems{padding:var(--gap) 0}
+.problems-layout{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:44px}
+.prob-stack{display:flex;flex-direction:column;gap:14px}
+
+.pc{
+  background:var(--white);
+  border-radius:var(--r);
+  padding:26px 28px;
+  border:1px solid var(--border);
+  border-left:4px solid var(--c,var(--accent));
+  box-shadow:var(--shadow-sm);
+  transition:transform .25s,box-shadow .25s;
+}
+.pc:hover{transform:translateY(-3px);box-shadow:var(--shadow-md)}
+.pc .ico-box{margin-bottom:14px}
+.pc h3{margin-bottom:6px}
+.pc p{font-size:.85rem;color:var(--ink-muted);line-height:1.6}
+
+.sol{
+  background:var(--white);
+  border-radius:var(--r);
+  padding:36px 32px;
+  border:1px solid var(--border);
+  border-left:4px solid var(--sage);
+  box-shadow:var(--shadow-md);
+  position:sticky;top:84px;align-self:start;
+}
+.sol h3{font-size:1.1rem;margin-bottom:24px}
+.sol-i{display:flex;gap:14px;margin-bottom:18px;align-items:flex-start}
+.sol-i:last-child{margin-bottom:0}
+.sol-i span{font-size:.87rem;color:var(--ink-soft);line-height:1.6}
+.ck{
+  flex-shrink:0;width:22px;height:22px;border-radius:50%;
+  background:var(--sage-soft);
+  display:flex;align-items:center;justify-content:center;margin-top:1px;
+}
+.ck svg{width:12px;height:12px;stroke:var(--sage);fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+
+/* ═══ 5. HOW ═══ */
+.how{padding:var(--gap) 0;background:var(--white);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.how-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:44px}
+.stp{
+  background:var(--canvas);border-radius:var(--r);
+  padding:32px 28px;border:1px solid var(--border);
+  position:relative;overflow:hidden;
+  transition:transform .25s,box-shadow .25s;
+}
+.stp:hover{transform:translateY(-3px);box-shadow:var(--shadow-md)}
+.stp-n{
+  font-family:var(--font-h);font-weight:900;font-size:5rem;
+  line-height:1;letter-spacing:-.06em;
+  color:var(--accent);opacity:.07;
+  position:absolute;top:12px;right:16px;
+}
+.stp h3{margin-bottom:10px;position:relative}
+.stp p{font-size:.85rem;color:var(--ink-muted);line-height:1.6;position:relative}
+
+/* ═══ 6. DEMO ═══ */
+.demo{padding:var(--gap) 0}
+.demo-layout{display:grid;grid-template-columns:1.1fr .9fr;gap:48px;margin-top:44px;align-items:start}
+
+.chat-frame{
+  background:var(--white);border-radius:20px;
+  border:1px solid var(--border);
+  box-shadow:var(--shadow-lg);
+  overflow:hidden;
+  transition:transform .4s cubic-bezier(.2,1,.3,1),box-shadow .4s;
+}
+.chat-frame:hover{transform:translateY(-4px);box-shadow:var(--shadow-xl)}
+.cf-head{
+  display:flex;align-items:center;gap:12px;
+  padding:16px 22px;background:var(--canvas-warm);border-bottom:1px solid var(--border);
+}
+.cf-ava{
+  width:40px;height:40px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),var(--accent-bright));
+  display:flex;align-items:center;justify-content:center;
+  font-size:.68rem;font-weight:700;color:#fff;letter-spacing:.02em;
+  font-family:var(--font-h);position:relative;
+}
+.cf-ava::after{content:'';position:absolute;bottom:1px;right:1px;width:10px;height:10px;border-radius:50%;background:var(--sage);border:2px solid var(--canvas-warm)}
+.cf-name{font-weight:700;font-size:.87rem}
+.cf-role{font-size:.7rem;color:var(--ink-muted)}
+.cf-body{padding:20px 22px;display:flex;flex-direction:column;gap:13px}
+
+.feat-list{display:flex;flex-direction:column;gap:28px}
+.ft{display:flex;gap:16px;align-items:flex-start}
+.ft-ico{
+  flex-shrink:0;width:42px;height:42px;
+  border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  transition:transform .2s;
+}
+.ft:hover .ft-ico{transform:scale(1.08)}
+.ft h3{margin-bottom:5px;font-size:.9rem}
+.ft p{font-size:.82rem;color:var(--ink-muted);line-height:1.6}
+
+/* ═══ 7. CASES ═══ */
+.cases{padding:var(--gap) 0;background:var(--white);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.cases-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-top:44px}
+.cs{
+  background:var(--canvas);border-radius:var(--r);
+  padding:28px 26px;border:1px solid var(--border);
+  transition:transform .25s,box-shadow .25s,border-color .25s;
+}
+.cs:hover{transform:translateY(-3px);box-shadow:var(--shadow-md);border-color:var(--border-strong)}
+.cs-tags{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:16px}
+.tg{
+  display:inline-block;padding:3px 10px;border-radius:100px;
+  font-size:.67rem;font-weight:700;letter-spacing:.02em;border:1px solid;
+}
+.tg-d{color:var(--ink-muted);border-color:var(--border-strong);background:var(--white)}
+.tg-e{color:var(--sage);border-color:rgba(91,158,111,.25);background:var(--sage-soft)}
+.tg-m{color:var(--amber);border-color:rgba(212,151,59,.25);background:var(--amber-soft)}
+.tg-h{color:var(--coral);border-color:rgba(232,114,90,.25);background:var(--coral-soft)}
+.cs h3{margin-bottom:7px;font-size:.97rem}
+.cs>p{font-size:.83rem;color:var(--ink-muted);line-height:1.55;margin-bottom:16px}
+.cs-roles{display:flex;gap:5px;flex-wrap:wrap}
+.rl{font-size:.69rem;font-weight:600;padding:4px 11px;border-radius:8px;background:var(--white);color:var(--ink-muted);border:1px solid var(--border)}
+.cs-wide{grid-column:1/-1}
+
+/* ═══ 8. PRICING ═══ */
+.pricing{padding:var(--gap) 0}
+.pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:44px}
+.pr{
+  background:var(--white);border:1px solid var(--border);
+  border-radius:var(--r);padding:34px 28px;
+  display:flex;flex-direction:column;
+  transition:transform .25s,box-shadow .25s;
+}
+.pr:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg)}
+.pr.pop{
+  border-color:var(--accent);position:relative;
+  box-shadow:var(--shadow-md);
+  background:linear-gradient(180deg,rgba(36,144,211,.03),var(--white) 30%);
+}
+.pr.pop::before{
+  content:'Популярный';position:absolute;top:-11px;left:50%;transform:translateX(-50%);
+  background:var(--accent);color:#fff;
+  font-size:.66rem;font-weight:700;letter-spacing:.04em;
+  padding:4px 16px;border-radius:100px;
+  box-shadow:0 3px 10px rgba(36,144,211,.3);
+}
+.pr-name{font-family:var(--font-h);font-weight:700;font-size:.9rem;margin-bottom:8px;letter-spacing:-.02em}
+.pr-cost{font-family:var(--font-h);font-weight:900;font-size:clamp(1.9rem,3vw,2.3rem);letter-spacing:-.04em;line-height:1;margin-bottom:4px}
+.pr-cost span{font-size:.82rem;font-weight:500;color:var(--ink-muted)}
+.pr-note{font-size:.73rem;color:var(--ink-faint);margin-bottom:26px;min-height:18px}
+.pr-ul{list-style:none;display:flex;flex-direction:column;gap:11px;margin-bottom:32px;flex:1}
+.pr-ul li{display:flex;align-items:center;gap:9px;font-size:.83rem;color:var(--ink-soft)}
+.pr-ul li svg{width:14px;height:14px;stroke:var(--sage);fill:none;flex-shrink:0;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.pr-btn{
+  display:block;text-align:center;padding:13px;border-radius:11px;
+  font-size:.87rem;font-weight:700;
+  transition:all .25s cubic-bezier(.2,1,.3,1);
+}
+.pr-btn-a{background:var(--accent);color:#fff;box-shadow:0 2px 12px rgba(36,144,211,.2)}
+.pr-btn-a:hover{background:var(--accent-bright);transform:translateY(-1px);box-shadow:0 4px 20px rgba(36,144,211,.3)}
+.pr-btn-o{border:1px solid var(--border-strong);color:var(--ink-soft)}
+.pr-btn-o:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-1px)}
+
+/* ═══ 9. FAQ ═══ */
+.faq{padding:var(--gap) 0;background:var(--white);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.faq-list{max-width:660px;margin:44px auto 0}
+.fq{border-bottom:1px solid var(--border)}
+.fq-q{
+  width:100%;text-align:left;padding:20px 0;
+  font-family:var(--font-b);font-size:.92rem;font-weight:700;
+  display:flex;justify-content:space-between;align-items:center;gap:20px;
+  transition:color .2s;
+}
+.fq-q:hover{color:var(--accent)}
+.fq-q svg{width:18px;height:18px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:transform .35s cubic-bezier(.2,1,.3,1)}
+.fq.open .fq-q svg{transform:rotate(180deg)}
+.fq-a{max-height:0;overflow:hidden;transition:max-height .4s cubic-bezier(.2,1,.3,1),padding .4s}
+.fq.open .fq-a{max-height:300px;padding-bottom:20px}
+.fq-a p{font-size:.86rem;color:var(--ink-muted);line-height:1.7}
+
+/* ═══ 10. CTA ═══ */
+.cta{padding:var(--gap) 0}
+.cta-box{
+  background:var(--white);border:1px solid var(--border);
+  border-radius:24px;
+  padding:clamp(44px,7vw,80px) clamp(28px,5vw,56px);
+  text-align:center;position:relative;overflow:hidden;
+  box-shadow:var(--shadow-md);
+}
+.cta-box::before{
+  content:'';position:absolute;top:-40%;left:50%;transform:translateX(-50%);
+  width:500px;height:350px;
+  background:radial-gradient(ellipse,rgba(36,144,211,.06),transparent 70%);
+  pointer-events:none;
+}
+.cta-box h2{position:relative;margin-bottom:12px}
+.cta-box .sub{margin:0 auto 36px;position:relative}
+.cta-box .btn{position:relative}
+
+/* ═══ FOR WHO ═══ */
+.forwho{padding:var(--gap) 0}
+.forwho-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:44px}
+.fw{
+  background:var(--white);border:1px solid var(--border);border-radius:var(--r);
+  padding:28px 24px;text-align:center;
+  transition:transform .25s,box-shadow .25s;
+}
+.fw:hover{transform:translateY(-3px);box-shadow:var(--shadow-md)}
+.fw-ico{
+  width:48px;height:48px;border-radius:14px;
+  display:inline-flex;align-items:center;justify-content:center;
+  margin-bottom:16px;
+}
+.fw-ico svg{width:22px;height:22px;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.fw h3{margin-bottom:8px;font-size:.92rem}
+.fw p{font-size:.82rem;color:var(--ink-muted);line-height:1.55}
+
+/* ═══ COMPARE TABLE ═══ */
+.compare{padding:var(--gap) 0;background:var(--white);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.cmp-table{
+  margin-top:44px;width:100%;border-collapse:collapse;
+  font-size:.84rem;
+}
+.cmp-table thead th{
+  text-align:left;padding:14px 16px;
+  font-family:var(--font-h);font-weight:700;font-size:.78rem;
+  letter-spacing:-.02em;
+  border-bottom:2px solid var(--border-strong);
+  color:var(--ink);
+}
+.cmp-table thead th:first-child{color:var(--ink-muted);font-family:var(--font-b);font-weight:600}
+.cmp-table thead th.hl{color:var(--accent);position:relative}
+.cmp-table thead th.hl::after{
+  content:'';position:absolute;bottom:-2px;left:16px;right:16px;
+  height:2px;background:var(--accent);
+}
+.cmp-table tbody td{
+  padding:13px 16px;border-bottom:1px solid var(--border);
+  color:var(--ink-soft);vertical-align:middle;
+}
+.cmp-table tbody td:first-child{font-weight:600;color:var(--ink)}
+.cmp-table tbody td.hl{background:rgba(36,144,211,.03)}
+.cmp-table .yes{color:var(--sage);font-weight:700}
+.cmp-table .no{color:var(--ink-faint)}
+.cmp-table .part{color:var(--amber);font-weight:600}
+
+/* ═══ 11. FOOTER ═══ */
+.footer{padding:48px 0;border-top:1px solid var(--border)}
+.footer-inner{display:flex;justify-content:space-between;align-items:flex-start;gap:32px;flex-wrap:wrap}
+.footer-brand{font-family:var(--font-h);font-weight:800;font-size:.95rem;letter-spacing:-.03em;margin-bottom:6px}
+.footer-brand span{color:var(--accent)}
+.footer-copy{font-size:.73rem;color:var(--ink-faint)}
+.footer-links{display:flex;gap:32px}
+.footer-col h4{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-muted);margin-bottom:10px}
+.footer-col a{display:block;font-size:.8rem;color:var(--ink-muted);margin-bottom:6px;transition:color .2s}
+.footer-col a:hover{color:var(--accent)}
+
+/* ═══ RESPONSIVE ═══ */
+@media(max-width:900px){
+  .hero .w{grid-template-columns:1fr;text-align:center}
+  .hero-text{padding-bottom:0}
+  .hero-p{margin-left:auto;margin-right:auto}
+  .hero-actions{justify-content:center}
+  .hero-visual{padding-bottom:48px}
+  .hero-card{transform:none;max-width:420px;margin:0 auto}
+  .hero-card:hover{transform:none}
+  .hero-visual::before,.hero-visual::after{display:none}
+  .problems-layout,.demo-layout{grid-template-columns:1fr}
+  .sol{position:static}
+}
+@media(max-width:768px){
+  .stats .w{grid-template-columns:repeat(2,1fr);gap:16px}
+  .st::after{display:none}
+  .forwho-grid{grid-template-columns:repeat(2,1fr)}
+  .how-grid,.pricing-grid{grid-template-columns:1fr}
+  .cmp-table{font-size:.78rem}
+  .cmp-table thead th,.cmp-table tbody td{padding:10px 10px}
+  .footer-inner{flex-direction:column;align-items:center;text-align:center}
+  .footer-links{gap:24px}
+  .pricing-grid{max-width:380px;margin-left:auto;margin-right:auto}
+  .cases-grid{grid-template-columns:1fr}
+  .cs-wide{grid-column:auto}
+  .hero-actions{flex-direction:column;align-items:center}
+  .btn{width:100%;max-width:300px;justify-content:center}
+}
+@media(max-width:480px){
+  .w{padding:0 18px}
+  .hero{padding-top:110px}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="w">
+    <a href="#" class="nav-logo">SA<span>-</span>Trainer</a>
+    <a href="https://t.me/sa_trainer_all_roles_bot" class="nav-cta" target="_blank">
+      <svg viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm5.53 8.15l-1.87 8.8c-.14.63-.5.78-1.02.49l-2.82-2.08-1.36 1.31c-.15.15-.28.28-.57.28l.2-2.86 5.18-4.68c.23-.2-.05-.31-.35-.12l-6.4 4.03-2.76-.86c-.6-.19-.61-.6.12-.89l10.79-4.16c.5-.18.94.12.78.89z"/></svg>
+      Открыть в Telegram
+    </a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="w">
+    <div class="hero-text rv">
+      <div class="hero-badge"><span class="dot"></span> Бета — первые 50 мест бесплатно</div>
+      <h1>Где аналитику тренировать <em>интервью</em>, если&nbsp;не&nbsp;на&nbsp;живом проекте?</h1>
+      <p class="hero-p">Бот в Telegram, где вы ведёте интервью с&nbsp;AI&#8209;стейкхолдерами, собираете требования и&nbsp;получаете оценку. Как на реальном проекте, только без последствий.</p>
+      <div class="hero-actions">
+        <a href="https://t.me/sa_trainer_all_roles_bot" class="btn btn-main" target="_blank">
+          <svg viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm5.53 8.15l-1.87 8.8c-.14.63-.5.78-1.02.49l-2.82-2.08-1.36 1.31c-.15.15-.28.28-.57.28l.2-2.86 5.18-4.68c.23-.2-.05-.31-.35-.12l-6.4 4.03-2.76-.86c-.6-.19-.61-.6.12-.89l10.79-4.16c.5-.18.94.12.78.89z"/></svg>
+          Попробовать бесплатно
+        </a>
+        <a href="#how" class="btn btn-soft">Как это работает&ensp;&darr;</a>
+      </div>
+      <p class="hero-note">Работает прямо в Telegram. Ничего не нужно скачивать.</p>
+    </div>
+    <div class="hero-visual rv d2">
+      <div class="hero-card">
+        <div class="hc-head">
+          <div class="hc-ava">ДВ</div>
+          <div><div class="hc-name">Дмитрий Волков</div><div class="hc-role">IT-директор &bull; CRM</div></div>
+        </div>
+        <div class="hc-body">
+          <div class="m m-u">Как сейчас ведётся работа с клиентами?<span class="m-t">14:32 ✓✓</span></div>
+          <div class="m m-b">Менеджеры ведут клиентов в Excel. Когда менеджер увольняется — вся история пропадает.<span class="m-t">14:33</span></div>
+          <div class="m m-u">Какие требования к CRM со стороны IT?<span class="m-t">14:35 ✓✓</span></div>
+          <div class="m m-b">Интеграция с 1С через API — без этого бухгалтерия не примет. И облако — у нас нет людей на серверы.<span class="m-t">14:36</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<section class="stats rv">
+  <div class="w">
+    <div class="st"><div class="st-n">5+</div><div class="st-l">кейсов</div></div>
+    <div class="st"><div class="st-n">15+</div><div class="st-l">AI-стейкхолдеров</div></div>
+    <div class="st"><div class="st-n">3</div><div class="st-l">уровня сложности</div></div>
+    <div class="st"><div class="st-n">24/7</div><div class="st-l">доступ</div></div>
+  </div>
+</section>
+
+<!-- FOR WHO -->
+<section class="forwho">
+  <div class="w">
+    <div class="tag-label rv">Для кого</div>
+    <h2 class="rv d1">Подойдёт, если вы...</h2>
+    <div class="forwho-grid">
+      <div class="fw rv d1">
+        <div class="fw-ico" style="background:var(--accent-soft)"><svg viewBox="0 0 24 24" stroke="var(--accent)"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.66 2.69 3 6 3s6-1.34 6-3v-5"/></svg></div>
+        <h3>Прошли курс по&nbsp;аналитике</h3>
+        <p>Теория есть, а практики ноль. Здесь получите то, чего не дают видеолекции.</p>
+      </div>
+      <div class="fw rv d2">
+        <div class="fw-ico" style="background:var(--coral-soft)"><svg viewBox="0 0 24 24" stroke="var(--coral)"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg></div>
+        <h3>Переходите в&nbsp;IT из другой сферы</h3>
+        <p>Не знаете, как выглядит реальная работа аналитика. Попробуете до первого проекта.</p>
+      </div>
+      <div class="fw rv d3">
+        <div class="fw-ico" style="background:var(--sage-soft)"><svg viewBox="0 0 24 24" stroke="var(--sage)"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg></div>
+        <h3>Готовитесь к&nbsp;собеседованию</h3>
+        <p>Кейсовые задания — стандарт на интервью. После 2-3 кейсов вы увереннее большинства.</p>
+      </div>
+      <div class="fw rv d4">
+        <div class="fw-ico" style="background:var(--violet-soft)"><svg viewBox="0 0 24 24" stroke="var(--violet)"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></div>
+        <h3>Ментор, ищущий инструмент</h3>
+        <p>Дайте студентам практику без вашего личного участия. Бот работает 24/7.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROBLEM / SOLUTION -->
+<section class="problems">
+  <div class="w">
+    <div class="tag-label rv">Проблема</div>
+    <h2 class="rv d1">Знакомая ситуация?</h2>
+    <div class="problems-layout">
+      <div class="prob-stack">
+        <div class="pc rv d1" style="--c:var(--coral)"><div class="ico-box" style="background:var(--coral-soft);border:1px solid rgba(232,114,90,.15)"><svg viewBox="0 0 24 24" stroke="var(--coral)"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg></div><h3>Прошли курс — а интервью вести не умеете</h3><p>Видеолекции и тесты не научат задавать вопросы заказчику, который сам не знает, чего хочет.</p></div>
+        <div class="pc rv d2" style="--c:var(--amber)"><div class="ico-box" style="background:var(--amber-soft);border:1px solid rgba(212,151,59,.15)"><svg viewBox="0 0 24 24" stroke="var(--amber)"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><h3>Менторы — хорошо, но 3 000₽/час</h3><p>И не каждый ментор готов разыгрывать роль сложного стейкхолдера снова и снова.</p></div>
+        <div class="pc rv d3" style="--c:var(--violet)"><div class="ico-box" style="background:var(--violet-soft);border:1px solid rgba(124,107,196,.15)"><svg viewBox="0 0 24 24" stroke="var(--violet)"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div><h3>ChatGPT — это не тренажёр</h3><p>Без ролей, без чеклиста, без оценки. Поболтали и разошлись. Чему научились — непонятно.</p></div>
+        <div class="pc rv d4" style="--c:var(--accent)"><div class="ico-box" style="background:var(--accent-soft);border:1px solid rgba(36,144,211,.15)"><svg viewBox="0 0 24 24" stroke="var(--accent)"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div><h3>Первый проект — сразу в бой</h3><p>Никто не даст потренироваться. Первое интервью — сразу с живым заказчиком, и ошибки стоят дорого.</p></div>
+      </div>
+      <div class="sol rv d2">
+        <h3>SA-Trainer устроен иначе</h3>
+        <div class="sol-i"><div class="ck"><svg viewBox="0 0 12 12"><path d="M10 3L4.5 8.5 2 6"/></svg></div><span>Вы получаете реальный кейс: бриф, контекст, список стейкхолдеров</span></div>
+        <div class="sol-i"><div class="ck"><svg viewBox="0 0 12 12"><path d="M10 3L4.5 8.5 2 6"/></svg></div><span>Каждый стейкхолдер — отдельный AI с уникальными знаниями. CEO не знает технических деталей, бухгалтер не в курсе маркетинга</span></div>
+        <div class="sol-i"><div class="ck"><svg viewBox="0 0 12 12"><path d="M10 3L4.5 8.5 2 6"/></svg></div><span>Вы сами решаете, кого и о чём спрашивать</span></div>
+        <div class="sol-i"><div class="ck"><svg viewBox="0 0 12 12"><path d="M10 3L4.5 8.5 2 6"/></svg></div><span>В конце сдаёте артефакт и получаете балл с разбором ошибок</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how" id="how">
+  <div class="w">
+    <div class="tag-label rv">Как это работает</div>
+    <h2 class="rv d1">Три шага — от запуска бота до результата</h2>
+    <div class="how-grid">
+      <div class="stp rv d1"><div class="stp-n">01</div><h3>Выбираете кейс</h3><p>Каждый кейс — отдельный проект: CRM для отдела продаж, корпоративный мессенджер, система лояльности. Разные домены, разная сложность.</p></div>
+      <div class="stp rv d2"><div class="stp-n">02</div><h3>Проводите интервью</h3><p>Переключаетесь между стейкхолдерами, задаёте вопросы, уточняете. CEO говорит одно, разработчик — другое, бухгалтер — третье.</p></div>
+      <div class="stp rv d3"><div class="stp-n">03</div><h3>Сдаёте работу</h3><p>Оформляете результаты в документ и загружаете в бот. Получаете оценку: что покрыли, что пропустили, где формулировки слабые.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- DEMO -->
+<section class="demo">
+  <div class="w">
+    <div class="tag-label rv">Как выглядит</div>
+    <h2 class="rv d1">Пример интервью со стейкхолдером</h2>
+    <p class="sub rv d2">Кейс «Внедрение CRM-системы», диалог с IT-директором</p>
+    <div class="demo-layout">
+      <div class="chat-frame rv d1">
+        <div class="cf-head">
+          <div class="cf-ava">ДВ</div>
+          <div><div class="cf-name">Дмитрий Волков</div><div class="cf-role">IT-директор &bull; CRM Integration</div></div>
+        </div>
+        <div class="cf-body">
+          <div class="m m-u">Дмитрий, расскажите, как сейчас ведётся работа с клиентами? Какие инструменты используете?<span class="m-t">14:32 ✓✓</span></div>
+          <div class="m m-b">Менеджеры ведут клиентов в Excel. У каждого своя таблица. Когда менеджер увольняется — вся история пропадает. CRM нужна была ещё вчера, но бюджет одобрили только сейчас.<span class="m-t">14:33</span></div>
+          <div class="m m-u">Какие ключевые требования к CRM со стороны IT?<span class="m-t">14:35 ✓✓</span></div>
+          <div class="m m-b">Интеграция с 1С через API — без этого бухгалтерия не примет. И облако — у нас нет людей на сопровождение серверов. Ещё миграция данных из текущих таблиц, но это второй приоритет.<span class="m-t">14:36</span></div>
+        </div>
+      </div>
+      <div class="feat-list">
+        <div class="ft rv d1"><div class="ft-ico" style="background:var(--accent-soft);border:1px solid rgba(36,144,211,.12)"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></div><div><h3>Разные знания у каждого</h3><p>CEO видит бизнес-цели, архитектор — ограничения, бухгалтер — процессы. Чтобы собрать картину — нужно опросить всех.</p></div></div>
+        <div class="ft rv d2"><div class="ft-ico" style="background:var(--amber-soft);border:1px solid rgba(212,151,59,.12)"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg></div><div><h3>Сложность под вас</h3><p>На лёгком уровне отвечают подробно. На сложном — уклоняются, говорят общими фразами, противоречат друг другу.</p></div></div>
+        <div class="ft rv d3"><div class="ft-ico" style="background:var(--sage-soft);border:1px solid rgba(91,158,111,.12)"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--sage)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><div><h3>Трекинг прогресса</h3><p>Видно, какие темы покрыты. Подсказки помогают, если застряли — но не подсказывают ответ.</p></div></div>
+        <div class="ft rv d4"><div class="ft-ico" style="background:var(--violet-soft);border:1px solid rgba(124,107,196,.12)"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--violet)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div><div><h3>8 шаблонов артефактов</h3><p>Протокол интервью, user stories, use cases, глоссарий. Оформляйте результат, не думая над форматом.</p></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CASES -->
+<section class="cases">
+  <div class="w">
+    <div class="tag-label rv">Кейсы</div>
+    <h2 class="rv d1">Проекты из разных доменов</h2>
+    <p class="sub rv d2">Каждый кейс — отдельная история. Новые добавляются регулярно.</p>
+    <div class="cases-grid">
+      <div class="cs rv d1"><div class="cs-tags"><span class="tg tg-d">IT-продукт</span><span class="tg tg-e">Лёгкий</span></div><h3>Mindly — Новый продукт</h3><p>Стартап разрабатывает IT-продукт. Нужно собрать требования от команды основателей.</p><div class="cs-roles"><span class="rl">CEO</span><span class="rl">Архитектор</span><span class="rl">Бизнес-аналитик</span></div></div>
+      <div class="cs rv d2"><div class="cs-tags"><span class="tg tg-d">CRM / Продажи</span><span class="tg tg-m">Средний</span></div><h3>Внедрение CRM-системы</h3><p>Компания переходит на CRM. У каждого отдела свои ожидания и свои страхи.</p><div class="cs-roles"><span class="rl">IT-директор</span><span class="rl">Бухгалтер</span><span class="rl">Маркетолог</span><span class="rl">Продажник</span></div></div>
+      <div class="cs rv d3"><div class="cs-tags"><span class="tg tg-d">E-commerce</span><span class="tg tg-m">Средний</span></div><h3>VIP-скидки для магазина</h3><p>Интернет-магазин хочет систему лояльности. Бизнес хочет одно, разработка — другое.</p><div class="cs-roles"><span class="rl">Владелец</span><span class="rl">Разработчик</span><span class="rl">Продажник</span><span class="rl">Бухгалтер</span></div></div>
+      <div class="cs rv d4"><div class="cs-tags"><span class="tg tg-d">HR / Корпоративный</span><span class="tg tg-h">Сложный</span></div><h3>Процесс согласования</h3><p>Автоматизация согласований в крупной компании. Политика, бюрократия, конфликты интересов.</p><div class="cs-roles"><span class="rl">CFO</span><span class="rl">HR</span><span class="rl">Сотрудник</span><span class="rl">Dev Lead</span></div></div>
+      <div class="cs cs-wide rv d5"><div class="cs-tags"><span class="tg tg-d">Коммуникации</span><span class="tg tg-h">Сложный</span></div><h3>Корпоративный мессенджер</h3><p>Компания делает свой мессенджер. Безопасность, интеграции, пользовательский опыт — всё конфликтует.</p><div class="cs-roles"><span class="rl">CEO</span><span class="rl">IT</span><span class="rl">Безопасник</span><span class="rl">HR</span><span class="rl">Tech Lead</span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- COMPARE -->
+<section class="compare">
+  <div class="w">
+    <div class="tag-label rv">Сравнение</div>
+    <h2 class="rv d1">Чем SA-Trainer лучше альтернатив</h2>
+    <table class="cmp-table rv d2">
+      <thead>
+        <tr>
+          <th></th>
+          <th class="hl">SA-Trainer</th>
+          <th>ChatGPT</th>
+          <th>Ментор</th>
+          <th>Онлайн-курс</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Готовые кейсы из реальных доменов</td>
+          <td class="hl yes">Да</td>
+          <td class="no">Нет</td>
+          <td class="part">Зависит</td>
+          <td class="part">Теория</td>
+        </tr>
+        <tr>
+          <td>Роли с уникальными знаниями</td>
+          <td class="hl yes">Да</td>
+          <td class="no">Нет</td>
+          <td class="yes">Да</td>
+          <td class="no">Нет</td>
+        </tr>
+        <tr>
+          <td>Автоматическая оценка артефактов</td>
+          <td class="hl yes">Да</td>
+          <td class="no">Нет</td>
+          <td class="yes">Да</td>
+          <td class="part">Частично</td>
+        </tr>
+        <tr>
+          <td>Трекинг прогресса и подсказки</td>
+          <td class="hl yes">Да</td>
+          <td class="no">Нет</td>
+          <td class="no">Нет</td>
+          <td class="part">Частично</td>
+        </tr>
+        <tr>
+          <td>Доступ 24/7 без записи</td>
+          <td class="hl yes">Да</td>
+          <td class="yes">Да</td>
+          <td class="no">Нет</td>
+          <td class="yes">Да</td>
+        </tr>
+        <tr>
+          <td>Стоимость</td>
+          <td class="hl yes">от 0₽</td>
+          <td class="part">$20/мес</td>
+          <td class="no">от 3 000₽/ч</td>
+          <td class="no">30-100К₽</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing" id="pricing">
+  <div class="w">
+    <div class="tag-label rv">Тарифы</div>
+    <h2 class="rv d1">Попробуйте бесплатно.<br>Понравится — выберете тариф.</h2>
+    <div class="pricing-grid">
+      <div class="pr rv d1">
+        <div class="pr-name">Free</div>
+        <div class="pr-cost">0₽ <span>навсегда</span></div>
+        <div class="pr-note">&nbsp;</div>
+        <ul class="pr-ul">
+          <li><svg viewBox="0 0 14 14"><path d="M11.5 3.5L5.25 9.75 2.5 7"/></svg>10 сообщений в день</li>
+          <li><svg viewBox="0 0 14 14"><path d="M11.5 3.5L5.25 9.75 2.5 7"/></svg>1 кейс (лёгкий)</li>
+          <li><svg viewBox="0 0 14 14"><path d="M11.5 3.5L5.25 9.75 2.5 7"/></svg>Обучающие материалы</li>
+          <li><svg viewBox="0 0 14 14"><path d="M11.5 3.5L5.25 9.75 2.5 7"/></svg>Шаблоны документов</li>
+        </ul>
+        <a href="https://t.me/sa_trainer_all_roles_bot" class="pr-btn pr-btn-o" target="_blank">Начать бесплатно</a>
+      </div>
+      <div class="pr pop rv d2">
+        <div class="pr-name">Basic</div>
+        <div class="pr-cost">990₽ <span>/мес</span></div>
+        <div class="pr-note">~33₽ в день</div>
+        <ul class="pr-ul">
+          <li><svg viewBox="0 0 14 14"><path d="M11.5 3.5L5.25 9.75 2.5 7"/></svg>100 сообщений в день</li>
+          <li><svg viewBox="0 0 14 14"><path d="M11.5 3.5L5.25 9.75 2.5 7"/></svg>3 кейса любой сложности</li>
+          <li><svg viewBox="0 0 14 14"><path d="M11.5 3.5L5.25 9.75 2.5 7"/></svg>Автоматическая оценка</li>
+          <li><svg viewBox="0 0 14 14"><path d="M11.5 3.5L5.25 9.75 2.5 7"/></svg>Трекинг прогресса</li>
+        </ul>
+        <a href="https://t.me/sa_trainer_all_roles_bot" class="pr-btn pr-btn-a" target="_blank">Подключить</a>
+      </div>
+      <div class="pr rv d3">
+        <div class="pr-name">Pro</div>
+        <div class="pr-cost">1 990₽ <span>/мес</span></div>
+        <div class="pr-note">или 14 990₽/год (−37%)</div>
+        <ul class="pr-ul">
+          <li><svg viewBox="0 0 14 14"><path d="M11.5 3.5L5.25 9.75 2.5 7"/></svg>Безлимитные сообщения</li>
+          <li><svg viewBox="0 0 14 14"><path d="M11.5 3.5L5.25 9.75 2.5 7"/></svg>Все кейсы</li>
+          <li><svg viewBox="0 0 14 14"><path d="M11.5 3.5L5.25 9.75 2.5 7"/></svg>Все уровни сложности</li>
+          <li><svg viewBox="0 0 14 14"><path d="M11.5 3.5L5.25 9.75 2.5 7"/></svg>Приоритетная поддержка</li>
+        </ul>
+        <a href="https://t.me/sa_trainer_all_roles_bot" class="pr-btn pr-btn-o" target="_blank">Подключить</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="faq">
+  <div class="w">
+    <div class="tag-label rv">Вопросы</div>
+    <h2 class="rv d1">Частые вопросы</h2>
+    <div class="faq-list">
+      <div class="fq rv"><button class="fq-q">Чем это отличается от ChatGPT?<svg viewBox="0 0 20 20"><path d="M5 7.5L10 12.5 15 7.5"/></svg></button><div class="fq-a"><p>В ChatGPT нет структуры: вы сами придумываете кейс, сами решаете, когда закончить, и не понимаете, чему научились. В SA-Trainer — готовый кейс с брифом, стейкхолдеры с уникальными знаниями, трекинг прогресса и оценка артефакта по рубрике.</p></div></div>
+      <div class="fq rv d1"><button class="fq-q">Я совсем новичок. Мне подойдёт?<svg viewBox="0 0 20 20"><path d="M5 7.5L10 12.5 15 7.5"/></svg></button><div class="fq-a"><p>Да. Лёгкие кейсы рассчитаны на тех, кто только начинает. Стейкхолдеры отвечают подробно, есть подсказки и обучающие материалы.</p></div></div>
+      <div class="fq rv d2"><button class="fq-q">Как работает оценка?<svg viewBox="0 0 20 20"><path d="M5 7.5L10 12.5 15 7.5"/></svg></button><div class="fq-a"><p>Загружаете документ — .docx или текстом. AI проверяет по чеклисту: все ли требования собраны, правильная ли структура, нет ли расплывчатых формулировок. Получаете балл и список замечаний.</p></div></div>
+      <div class="fq rv d3"><button class="fq-q">Поможет ли это на собеседовании?<svg viewBox="0 0 20 20"><path d="M5 7.5L10 12.5 15 7.5"/></svg></button><div class="fq-a"><p>Прямо для этого и создан. На собеседованиях часто дают кейсовое задание — соберите требования, оформите протокол. После 2-3 кейсов вы делаете это увереннее, чем большинство кандидатов.</p></div></div>
+      <div class="fq rv d4"><button class="fq-q">Сколько времени нужно на один кейс?<svg viewBox="0 0 20 20"><path d="M5 7.5L10 12.5 15 7.5"/></svg></button><div class="fq-a"><p>Лёгкий — 30-40 минут. Средний — час-полтора. Сложный — 2-3 часа. Можно проходить в несколько заходов, прогресс сохраняется.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta rv">
+  <div class="w">
+    <div class="cta-box">
+      <h2>Теории достаточно.<br>Откройте бота и проведите первое интервью.</h2>
+      <p class="sub" style="margin:0 auto 36px">30 секунд до старта. Первый кейс — бесплатно.</p>
+      <a href="https://t.me/sa_trainer_all_roles_bot" class="btn btn-main" target="_blank">
+        <svg viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm5.53 8.15l-1.87 8.8c-.14.63-.5.78-1.02.49l-2.82-2.08-1.36 1.31c-.15.15-.28.28-.57.28l.2-2.86 5.18-4.68c.23-.2-.05-.31-.35-.12l-6.4 4.03-2.76-.86c-.6-.19-.61-.6.12-.89l10.79-4.16c.5-.18.94.12.78.89z"/></svg>
+        Открыть в Telegram
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="w">
+    <div class="footer-inner">
+      <div>
+        <div class="footer-brand">SA<span>-</span>Trainer</div>
+        <div class="footer-copy">&copy; 2026 SA-Trainer. Все права защищены.</div>
+      </div>
+      <div class="footer-links">
+        <div class="footer-col">
+          <h4>Продукт</h4>
+          <a href="https://t.me/sa_trainer_all_roles_bot" target="_blank">Открыть бота</a>
+          <a href="#how">Как работает</a>
+          <a href="#pricing">Тарифы</a>
+        </div>
+        <div class="footer-col">
+          <h4>Поддержка</h4>
+          <a href="https://t.me/sa_trainer_all_roles_bot" target="_blank">Написать в бота</a>
+          <span style="font-size:.78rem;color:var(--ink-faint);display:block;margin-top:2px">команда /feedback</span>
+        </div>
+        <div class="footer-col">
+          <h4>Документы</h4>
+          <a href="legal/offer.html">Публичная оферта</a>
+          <a href="legal/privacy.html">Политика конфиденциальности</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+const io=new IntersectionObserver(ee=>{ee.forEach(e=>{if(e.isIntersecting){e.target.classList.add('v');io.unobserve(e.target)}})},{threshold:.06,rootMargin:'0px 0px -30px 0px'});
+document.querySelectorAll('.rv').forEach(el=>io.observe(el));
+document.querySelectorAll('.fq-q').forEach(b=>{b.addEventListener('click',()=>{const i=b.parentElement,o=i.classList.contains('open');document.querySelectorAll('.fq.open').forEach(x=>x.classList.remove('open'));if(!o)i.classList.add('open')})});
+</script>
+</body>
+</html>
